@@ -1,9 +1,37 @@
 #lang racket
 ; TD vendredi 17 mai 2013
+
+; **** Manipulation de données ****
+; renvoie une liste avec les éléments de la liste l pour lesquels test est vrai
+(define (filter test list)
+  (if(empty? list ) 
+     '()
+     (let ((filtered (car list)))
+       (if (equal? (test filtered) #t)
+           (cons (car list) (filter test (cdr list)))
+           (filter test (cdr list))))))
+  
+
+; prend une liste de chaînes en paramètre 
+; et les affiche les unes après les autres en passant à la ligne entre les différentes chaînes
+(define (display-all list)
+  (for-each (lambda(x) (display x) (newline)) list)
+  )
+; prend une liste de symboles en paramètre et renvoie la même liste dans laquelle les caractères sont inversés
+(define (trans list)
+  (map revsymb list)
+  )
+
 ;  inverse l’ordre des caractères d’un symbole
 (define (revsymb symb)
-  
+  (string->symbol (list->string(reverse (string->list (symbol->string symb)))))
   )
+
+
+
+
+
+; **** Échauffement ****
 
 ;  renvoie la liste des n premiers entiers naturels (de 0 à n-1)
 (define (iota n)
@@ -62,3 +90,16 @@
 (test (iota 5) '(0 1 2 3 4))
 (test (iota 0) '())
 (test (iota -1) '())
+
+
+
+
+(test (revsymb 'foobar) 'raboof)
+(test (trans '(foo bar)) '(oof rab))
+(test (filter (lambda (x) (> x 3)) '(1 10 2 20)) '(10 20))
+;(test (slash * '(10 20 30)) 6000)
+;(test (slash string-append '("foo" "bar")) "foobar")
+;(test (slash + '(1 2 3)) 6)
+;(test (slash - '(10 2 3)) 5)
+;(test (slash expt '(2 3 4)) 4096)
+;(test (slash * (filter prime? (iota 100))) 2305567963945518424753102147331756070)
