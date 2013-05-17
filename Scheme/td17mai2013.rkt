@@ -2,6 +2,17 @@
 ; TD vendredi 17 mai 2013
 
 ; **** Manipulation de données ****
+
+; applique l’opérateur binaire operator sur les deux premiers éléments de l, 
+; puis sur ce résultat et le troisième élément, puis sur ce nouveau résultat et le quatrième élément, etc
+(define (slash operator l) 
+  (match-let (
+              ((list n1 n2 t ...) l) 
+              )
+    (if (empty? t)
+    (operator n1 n2)
+    (slash operator (cons (operator n1 n2) t)))))
+  
 ; renvoie une liste avec les éléments de la liste l pour lesquels test est vrai
 (define (filter test list)
   (if(empty? list ) 
@@ -97,9 +108,9 @@
 (test (revsymb 'foobar) 'raboof)
 (test (trans '(foo bar)) '(oof rab))
 (test (filter (lambda (x) (> x 3)) '(1 10 2 20)) '(10 20))
-;(test (slash * '(10 20 30)) 6000)
-;(test (slash string-append '("foo" "bar")) "foobar")
-;(test (slash + '(1 2 3)) 6)
-;(test (slash - '(10 2 3)) 5)
-;(test (slash expt '(2 3 4)) 4096)
+(test (slash * '(10 20 30)) 6000)
+(test (slash string-append '("foo" "bar")) "foobar")
+(test (slash + '(1 2 3)) 6)
+(test (slash - '(10 2 3)) 5)
+(test (slash expt '(2 3 4)) 4096)
 ;(test (slash * (filter prime? (iota 100))) 2305567963945518424753102147331756070)
