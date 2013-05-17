@@ -1,6 +1,38 @@
 #lang racket
 ; TD vendredi 17 mai 2013
 
+; **** Transformation de code ****
+(require (lib "defmacro.ss"))
+
+(define-syntax while
+  (syntax-rules ()
+    ((while cond body ...)
+       (let loop()
+         (unless(equal? cond #f)
+         body ...
+         (loop))))))
+
+(define-syntax or
+  (syntax-rules ()
+    ((or)
+     #f)
+    ((or a b ...)
+     (let ((resultat a))
+       (if resultat
+           resultat
+           (or b ...))))))
+
+(define-syntax and
+  (syntax-rules ()
+  ((and)
+  #t)
+  ((and a)
+   a)
+  ((and a b ...)
+   (if (equal? a #f)
+       #f
+       (and b ...)))))
+
 ; **** Manipulation de données ****
 
 ; applique l’opérateur binaire operator sur les deux premiers éléments de l, 
@@ -68,13 +100,23 @@
 (define (multiple? i n) (if(= (modulo n i) 0) #t #f))
 
 (define (prime? n)
-  (when (<= n 0)
-      #f
-      )
   
-  ;(for-each (multiple? 2 n) '(range n))
-  )
-
+  (if(<= n 2)
+      (if (= n 2)
+          #t
+          #f
+          )
+      (if (= (modulo n 2) 0)
+      #f
+      (let loop ((t (round(sqrt n)))
+                 (n n))
+         (if (>= t n)
+             #t
+             (if(= (modulo n t) 0)
+             #f
+             (loop (next-odd t) n)
+           ))))))
+  
 ; renvoie le plus petit nombre impair strictement supérieur à n.
 (define (next-odd n)
   (if(= (modulo n 2) 0)
@@ -90,20 +132,17 @@
 (test (next-odd 2) 3)
 (test (prime? -5) #f)
 (test (prime? 0) #f)
-;(test (prime? 1) #f)
-;(test (prime? 2) #t)
-;(test (prime? 3) #t)
-;(test (prime? 4) #f)
-;(test (prime? 19) #t)
-;(test (prime? 21) #f)
-;(test (prime? 25) #f)
+(test (prime? 1) #f)
+(test (prime? 2) #t)
+(test (prime? 3) #t)
+(test (prime? 4) #f)
+(test (prime? 19) #t)
+(test (prime? 21) #f)
+(test (prime? 25) #f)
 (test (map-interval (lambda (x) (+ 2 x)) 10 13) '(12 13 14 15))
 (test (iota 5) '(0 1 2 3 4))
 (test (iota 0) '())
 (test (iota -1) '())
-
-
-
 
 (test (revsymb 'foobar) 'raboof)
 (test (trans '(foo bar)) '(oof rab))
@@ -113,4 +152,6 @@
 (test (slash + '(1 2 3)) 6)
 (test (slash - '(10 2 3)) 5)
 (test (slash expt '(2 3 4)) 4096)
-;(test (slash * (filter prime? (iota 100))) 2305567963945518424753102147331756070)
+(test (slash * (filter prime? (iota 100))) 2305567963945518424753102147331756070)
+
+(test (let ((i 0) (c 0)) (while (< i 5) (set! c (+ c i)) (set! i (+ i 1))) c) 10)
