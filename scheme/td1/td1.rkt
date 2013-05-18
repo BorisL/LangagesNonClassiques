@@ -6,12 +6,18 @@
 
 ; **** Programmation par contrat ****
 
+; !!! En cours de travail !!!
+(define (pre exp)
+  (unless exp (error "Précondition fausse")))
+
+(define-macro (contract . args)
+  `(begin ,args ... )
+  )
+; !!! En cours de travail !!!
+
 
 ; **** Trace ****
-;(define-macro (define-trace f . args body ...)
-;    `(define ,(f args) (begin ,@(display f))))
 
-; !!! À REVOIR !!!
 (define-syntax define-trace
   (syntax-rules ()
   ((define-trace (f . args) body ...)
