@@ -1,8 +1,27 @@
 #lang racket
 ; TD vendredi 17 mai 2013
+(require (lib "defmacro.ss"))
+
+; **** Structures ****
+
+; **** Programmation par contrat ****
+
+
+; **** Trace ****
+;(define-macro (define-trace f . args body ...)
+;    `(define ,(f args) (begin ,@(display f))))
+
+; !!! À REVOIR !!!
+(define-syntax define-trace
+  (syntax-rules ()
+  ((define-trace `(f args) body ...)
+   (let () (display f) ))))
+
+(define (test1 x)
+  (* x 2)
+  )
 
 ; **** Transformation de code ****
-(require (lib "defmacro.ss"))
 
 (define-syntax while
   (syntax-rules ()
