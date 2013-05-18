@@ -14,12 +14,13 @@
 ; !!! À REVOIR !!!
 (define-syntax define-trace
   (syntax-rules ()
-  ((define-trace `(f args) body ...)
-   (let () (display f) ))))
+  ((define-trace (f . args) body ...)
+   (define (f . args) (begin (display f) (newline)  body ... )))))
 
-(define (test1 x)
-  (* x 2)
+(define-trace (test1 x y)
+  (* x y)
   )
+
 
 ; **** Transformation de code ****
 
