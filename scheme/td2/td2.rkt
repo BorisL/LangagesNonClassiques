@@ -94,3 +94,8 @@
 
 (queens)
 (length (bag-of queens))
+
+; Coroutine
+; λ : ctrl + \
+(define thread_list '())
+
