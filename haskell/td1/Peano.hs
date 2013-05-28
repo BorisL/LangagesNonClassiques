@@ -4,6 +4,8 @@ module Peano where
 -- Nombre de Peano
 
 data Peano  = Zero | Succ Peano deriving (Show, Ord, Eq, Read)
+div b (Succ(Zero)) = b 
+div a b = fst (quotRem a b)
 
 instance Num Peano where 
   a + Zero = a
@@ -21,10 +23,12 @@ instance Num Peano where
                   
 instance Enum Peano where
   toEnum a = Zero
-  
   fromEnum a = 0
 
 instance Real Peano where
-toRational = 0
+  -- toRational = 0
 
 instance Integral Peano where
+  quotRem a b = quotRem a b
+  toInteger Zero = 0
+  toInteger (Succ(a)) = 1 + toInteger a

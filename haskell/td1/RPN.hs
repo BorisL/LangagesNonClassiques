@@ -11,17 +11,17 @@ type Stack = [Int]
 -- travaillant sur une pile
 type Operator = Stack -> Stack   
 
-parsOp :: String -> Operator
-parsOp "+" (x1: x2 : xs) =  x1 + x2 : xs
-parsOp "-" (x1: x2 : xs) =  x1 - x2 : xs
-parsOp "*" (x1: x2 : xs) =  x1 * x2 : xs
-parsOp "div" (x1: x2 : xs) =   div x1 x2 : xs
-parsOp "dup" (x1: xs) =   x1 : x1 : xs
-parsOp "swap" (x1: x2 : xs) =   x2 : x1 : xs
-parsOp "drop" (_ : xs) =   xs
-parsOp "depth" (x) =  [length (x)] ++ x
-parsOp "pick" (x : xs) = [xs!! x] ++ xs
-parsOp a (x) =  [(read a) :: Int] ++ x
+parseOp :: String -> Operator
+parseOp "+" (x1: x2 : xs) =  x1 + x2 : xs
+parseOp "-" (x1: x2 : xs) =  x2 - x1 : xs
+parseOp "*" (x1: x2 : xs) =  x1 * x2 : xs
+parseOp "/" (x1: x2 : xs) =   div x2 x1 : xs
+parseOp "dup" (x1: xs) =   x1 : x1 : xs
+parseOp "swap" (x1: x2 : xs) =   x2 : x1 : xs
+parseOp "drop" (_ : xs) =   xs
+parseOp "depth" (x) =  [length (x)] ++ x
+parseOp "pick" (x : xs) = [xs!! x] ++ xs
+parseOp a (x) =  [(read a) :: Int] ++ x
 -- (read "123") :: Int
 
 eval :: Stack -> [Operator] -> Stack
@@ -29,7 +29,7 @@ eval x [op] = op x
 eval x (op : ops) = eval (op x) ops
 
 parse :: String -> [Operator]
-parse x = [parsOp (words x !! 0)]
+parse x = map parseOp (words x)
 
 repl :: Stack -> IO ()
 repl stack = do
