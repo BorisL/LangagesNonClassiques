@@ -13,6 +13,12 @@ import play.api.libs.concurrent._ // import for Akka
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits._
 
+import anorm._
+import anorm.SqlParser._
+
+import play.api.db._
+
+
 object Robot {
   
   def apply(chatRoom: ActorRef) {
@@ -44,7 +50,7 @@ object ChatRoom {
  implicit val timeout = Timeout(1 second)
   
   lazy val default = {
-    val roomActor = Akka.system.actorOf(Props[ChatRoom])
+    var roomActor = Akka.system.actorOf(Props[ChatRoom])
     
     // Create a bot user (just for fun)
     Robot(roomActor)
@@ -89,6 +95,7 @@ class ChatRoom extends Actor {
 
   var members = Set.empty[String];
   val (chatEnumerator, chatChannel) = Concurrent.broadcast[JsValue]
+  var banwordlist = List.empty[BanWord];
 
   def receive = {
 
@@ -120,7 +127,7 @@ class ChatRoom extends Actor {
   def parseCommand(kind: String, user: String, myList: List[String], text: String):JsObject = myList match {
     case "/list" :: _ => JsObject(
       Seq(
-        "kind" -> JsString(kind),
+        "kind" -> JsString("list"),
         "user" -> JsString(user),
         "to" -> JsString("All"),
         "message" -> JsString(
@@ -131,54 +138,194 @@ class ChatRoom extends Actor {
       )
     )
 
-    case _ :: _ => JsObject(
+    case "/quit" :: msg => JsObject(
       Seq(
-        "kind" -> JsString(kind),
+        "kind" -> JsString("quit"),
         "user" -> JsString(user),
         "to" -> JsString("All"),
-        "message" -> JsString(text),
+        "message" -> JsString(
+          msg.mkString),
         "members" -> JsArray(
           members.toList.map(JsString)
         )
       )
     )
+
+    case "/talk" :: to :: msg =>  JsObject(
+      Seq(
+        "kind" -> JsString("private"),
+        "user" -> JsString(user),
+        "to" -> JsString(to),
+        "message" -> JsString(
+          msg.mkString(" ")),
+        "members" -> JsArray(
+          members.toList.map(JsString)
+        )
+      )
+    )
+
+     
+      case "/banword-add" :: badword :: goodword :: _ =>  {
+        if(checkAuthorisation(user,"admin")) {
+        BanWord.create(badword,goodword)
+        JsObject(
+          Seq(
+            "kind" -> JsString("info"),
+            "user" -> JsString("System"),
+            "to" -> JsString("All"),
+            "message" -> JsString(badword+" is now a very bad word ! He will be replaced by "+goodword),
+            "members" -> JsArray(
+              members.toList.map(JsString)
+            )
+          )
+        )
+        }
+        else 
+          notAdmin(user)
+      }
+
+    case "/banword-remove" :: badword :: _ =>  {
+      if(checkAuthorisation(user,"admin")) {
+      BanWord.delete(badword)
+      JsObject(
+      Seq(
+        "kind" -> JsString("info"),
+        "user" -> JsString("System"),
+        "to" -> JsString("All"),
+        "message" -> JsString(badword+" is no more a bad word !"),
+        "members" -> JsArray(
+          members.toList.map(JsString)
+        )
+      )
+    )
+      }
+      else
+        notAdmin(user)
+    }
+case "/banword-list" :: _ => {
+      getBanWordList
+      JsObject(
+      Seq(
+        "kind" -> JsString("info"),
+        "user" -> JsString("System"),
+        "to" -> JsString(user),
+        "message" -> JsString(banwordlist.toString),
+        "members" -> JsArray(
+          members.toList.map(JsString)
+        )
+      )
+    )
+}
+      case "/banuser" :: to :: msg =>  
+      if(checkAuthorisation(user,"admin"))
+        // user is admin
+        JsObject(
+          Seq(
+            "kind" -> JsString("ban"),
+            "user" -> JsString(user),
+            "to" -> JsString(to),
+            "message" -> JsString(
+              to +" has been ban by " + user +" ("+msg.mkString(" ")+")"),
+            "members" -> JsArray(
+              members.toList.map(JsString)
+            )
+          )
+        )
+      else
+        // user is not admin
+        notAdmin(user)
+
+    case _ :: _ => 
+      {
+        getBanWordList
+        var goodtext = text
+        for(banword <- banwordlist) {
+          println(banword)
+          goodtext = goodtext replaceAllLiterally(banword.badword,banword.goodword)
+        }
+        println(banwordlist)
+        JsObject(
+          Seq(
+            "kind" -> JsString(kind),
+            "user" -> JsString(user),
+            "to" -> JsString("All"),
+            "message" -> JsString(goodtext),
+            "members" -> JsArray(
+              members.toList.map(JsString)
+            )
+          )
+        )
+      }
   }
 
   def notifyAll(kind: String, user: String, text: String) {
-    
+    getBanWordList
     val xs = text.split(" ").toList 
     val msg = parseCommand(kind, user, xs, text)
-    
-   /* val msg = JsObject(
-      Seq(
-        "kind" -> JsString(kind),
-        "user" -> JsString(user),
-        "to" -> JsString("All"),
-        "message" -> JsString(text),
-        "members" -> JsArray(
-          members.toList.map(JsString)
-        )
-      )
-    )*/
+    if(msg \ "kind" == "quit")
+      sender ! Quit(user)
     chatChannel.push(msg)
   }
 
-  def notifyOne(kind: String, userFrom: String, userTo: String, text: String) {
-    val msg = JsObject(
-      Seq(
-        "kind" -> JsString(kind),
-        "user" -> JsString(userFrom),
-        "to" -> JsString(userTo),
-        "message" -> JsString(text),
-        "members" -> JsArray(
-          members.toList.map(JsString)
+  def notAdmin(user: String):JsObject = {
+    JsObject(
+          Seq(
+            "kind" -> JsString("private"),
+            "user" -> JsString("system"),
+            "to" -> JsString(user),
+            "message" -> JsString(
+              "You are not admin !"),
+            "members" -> JsArray(
+              members.toList.map(JsString)
+            )
+          )
         )
-      )
-    )
+  }
+  def checkAuthorisation(mypseudo: String, command: String):Boolean ={
+    val user = {
+      get[String] ("pseudo") ~
+      get[String] ("droits") map {
+        case pseudo~droits => User(pseudo,droits)
+      }
+    }
+    def all(pseudo: String): List[User] = DB.withConnection {implicit c =>
+      // implicit value used for the implicite connexion
+    SQL("select * from superuser").as(user *)
+          
+    }
+
+    // return True if the user is admin, else False
+    val results = all(mypseudo)
+    val data = results find  {e => e.pseudo == mypseudo}
+    if(data != None)
+      ((data get).droits == "admin" )
+    else
+      false
+  }
+
+  def getBanWordList {
+    val banword = {
+      get[String] ("badword") ~
+      get[String] ("goodword") map {
+        case badword~goodword => BanWord(badword,goodword)
+      }
+    }
+  def all(): List[BanWord] = DB.withConnection {implicit c =>
+    // implicit value used for the implicite connexion
+    SQL("select * from wordsbanlist").as(banword *)
+  }
+    banwordlist = all()
+  }
+
+  def changeBanWord(word: String): String = {
+    val data = banwordlist find  {e => e.badword == word}
+    if(data != None)
+      (data get).goodword
+    else
+      word
   }
 
 }
-
 case class Join(username: String)
 case class Quit(username: String)
 case class Talk(username: String, text: String)

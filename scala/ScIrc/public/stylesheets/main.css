@@ -111,3 +111,7 @@ body {
 .message.join, .message.quit {
     background: #D9E7FB;
 }
+
+.info {
+    background: #FFFF00;
+}

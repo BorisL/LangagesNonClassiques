@@ -20,7 +20,7 @@
                     @connected.map { username =>
                         <p class="pull-right">
                             Logged in as @username —
-                            <a href="@routes.Application.index()">Disconnect</a>
+                            <a id= "loggout" href="@routes.Application.index()">Disconnect</a>
                         </p>
                     }.getOrElse {
                         <form action="@routes.Application.chatRoom()" class="pull-right">

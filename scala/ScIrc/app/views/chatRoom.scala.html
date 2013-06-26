@@ -56,9 +56,19 @@
   $("span", el).text(data.user)
   $("p", el).text(data.message)
   $(el).addClass(data.kind)
+  
+  if(data.kind == "quit" && data.user == '@username') document.getElementById("loggout").click()
+  if(data.kind == "ban")
+  if(data.to == '@username') document.getElementById("loggout").click()
+  else $('#messages').append(el)
+  if(data.kind == "info" && (data.to == "All" || data.to=='@username'))
+  $('#messages').append(el)
+  if(data.kind == "talk" || data.kind == "join" || 
+  (data.kind == "private" && data.user == '@username') 
+  || data.to == '@username') {
   if(data.user == '@username') $(el).addClass('me')
   $('#messages').append(el)
-  
+  }
   // Update the members list
   $("#members").html('') 
   $(data.members).each(function() {
